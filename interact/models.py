@@ -1,6 +1,6 @@
 from django.db import models
 from django.forms import ModelForm
-from primary_server.settings import SCHEMAS
+#from primary_server.settings import SCHEMAS
 import types
 
 def make_name(project_id, entity_type_name):
@@ -67,7 +67,7 @@ class StarcoderModel(models.Model):
 starcoder_models = {}
 starcoder_reconstruction_models = {}
 
-for project_id, schema in SCHEMAS.items():
+for project_id, schema in []: #SCHEMAS.items():
     print(project_id)
     fields = {}    
     for field_name, field_spec in schema["data_fields"].items():
