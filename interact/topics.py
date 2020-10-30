@@ -2,9 +2,18 @@ from .base_visualization import BaseVisualization
 
 class Topics(BaseVisualization):
     def __init__(self, spec):
-        self.values = spec
+        self.values = []#spec
+        uvals = {v : i for i, v in enumerate(set([x["topic"] for x in spec]))}
+        self.num_topics = len(uvals)
+        for v in spec:
+            v["topic"] = uvals[v["topic"]]
+            self.values.append(v)
         super(Topics, self).__init__(spec)
 
+    @property
+    def background(self):
+        return {"value" : "blue"}
+        
     @property
     def scales(self):
         return [
@@ -32,7 +41,7 @@ class Topics(BaseVisualization):
             {"name" : "width", "value" : 400},
             {"name": "cellHeight", "value": 300},
             {"name": "cellWidth", "value": 400},
-            {"name" : "height", "value" : 300*10},            
+            {"name" : "height", "value" : 300*self.num_topics},
         ]
 
     @property
@@ -67,11 +76,13 @@ class Topics(BaseVisualization):
                     }
                 },
                 "encode": {
-                    "enter": {
+                    "update": {
                         "y": {"scale": "groupy", "field": "topic"},
+                        "fill" : {"value" : "blue"},
+                        "stroke" : {"value" : "blue"},
                     }
                 },
-                "title" : {"text" : {"signal" : "parent.topic"}},
+                #"title" : {"text" : {"signal" : "parent.topic"}},
                 "marks": [
                     {
                         "type": "text",

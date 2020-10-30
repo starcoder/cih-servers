@@ -3,7 +3,6 @@ from .base_visualization import BaseVisualization
 class Bottlenecks(BaseVisualization):
     def __init__(self, spec):
         self.values = spec
-        super(Bottlenecks, self).__init__(spec)
 
     @property
     def autosize(self):
@@ -16,7 +15,30 @@ class Bottlenecks(BaseVisualization):
             {"name": "cellHeight", "value": 300},
             {"name": "cellWidth", "value": 400},
             {"name" : "height", "value" : 1800},            
+            {
+                "name": "active",
+                "value": {},
+                "on": [
+                    {"events": "symbol:mousedown, symbol:touchstart", "update": "datum"},
+                    #{"events": "window:touchend", "update": "{}"}
+                    #{"events": "window:mouseup, window:touchend", "update": "{}"}
+                ]
+            },
+            #{ "name": "isActive", "update": "active.entity" },
+            #{
+            #    "name": "timeline",
+            #    "value": {},
+            #    "on": [
+            #        {"events": "@point:mouseover", "update": "isActive ? active : datum"},
+            #        {"events": "@point:mouseout", "update": "active"},
+            #        {"events": {"signal": "active"}, "update": "active"}
+            #    ]
+            #},
         ]
+
+    @property
+    def background(self):
+        return None
     
     @property
     def data(self):
@@ -48,6 +70,12 @@ class Bottlenecks(BaseVisualization):
                     }
                 ]
             },
+            #{
+            #    "name": "trackEntity",
+            #    "on": [
+            #        {"trigger": "active", "toggle": "{entity: active.entity}"}
+            #    ]
+            #}
         ]
 
     @property
@@ -79,8 +107,12 @@ class Bottlenecks(BaseVisualization):
                     }
                 },
                 "encode": {
-                    "enter": {
+                    "update": {
                         "y": {"scale": "groupy", "field": "entity_type"},
+                        "width" : {"signal" : "width"},
+                        "height" : {"signal" : "cellHeight"},
+                        "fill" : {"value" : "lightblue"},
+                        "stroke" : {"value" : "black"},
                     }
                 },
                 "scales" : [

@@ -1,6 +1,6 @@
-from .base_visualization import BaseVisualization
+from .base_visualization import StarcoderVisualization
 # categorical and numeric
-class TimeSeries(BaseVisualization):
+class TimeSeries(StarcoderVisualization):
 
     @property
     def icon(self):

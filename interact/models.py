@@ -1,6 +1,6 @@
 from django.db import models
 from django.forms import ModelForm
-from starcoder_server.settings import SCHEMAS
+from primary_server.settings import SCHEMAS
 import types
 
 def make_name(project_id, entity_type_name):
@@ -23,19 +23,6 @@ class SchemaForm(ModelForm):
     class Meta:
         model = Schema
         fields = ["schema"]
-
-# class Place(models.Field):
-#     description = "A geographic coordinate"
-
-#     def __init__(self, *args, **kwargs):
-#         kwargs['max_length'] = 104
-#         super().__init__(*args, **kwargs)    pass
-
-#     def deconstruct(self):
-#         name, path, args, kwargs = super().deconstruct()
-#         del kwargs["max_length"]
-#         return name, path, args, kwargs
-
         
 model_mapping = {
     "text" : (models.TextField, {"null" : True}),
@@ -43,6 +30,7 @@ model_mapping = {
     "boolean" : (models.CharField, {"max_length" : 500, "null" : True}),
     "distribution" : (models.JSONField, {"null" : True}),    
     "numeric" : (models.FloatField, {"null" : True}),
+    "scalar" : (models.FloatField, {"null" : True}),
     "integer" : (models.IntegerField, {"null" : True}),
     "datetime" : (models.DateTimeField, {"null" : True}),
     "date" : (models.DateField, {"null" : True}),
@@ -69,18 +57,18 @@ class Visualization(models.Model):
     project = models.ForeignKey(Project, on_delete=models.CASCADE)
     spec = models.JSONField(null=False, unique=True)
     def __str__(self):
-        return self.name #str(self.spec)
+        return self.name
 
-#class TopicModel(models.Model):
-#    project = models.ForeignKey(Project, on_delete=models.CASCADE)
-
-#class Topic(models.Model):
-#    pass
+class StarcoderModel(models.Model):
+    project = models.ForeignKey(Project, on_delete=models.CASCADE)
+    blob = models.BinaryField()
+    structure = models.JSONField()
     
 starcoder_models = {}
 starcoder_reconstruction_models = {}
 
 for project_id, schema in SCHEMAS.items():
+    print(project_id)
     fields = {}    
     for field_name, field_spec in schema["data_fields"].items():
         class_name = "{}Field".format(make_name(project_id, field_name))
@@ -109,6 +97,7 @@ for project_id, schema in SCHEMAS.items():
         rclass_attr = {"__module__" : Project.__module__, "entity_type" : entity_type_name}
         class_attr["starcoder_id"] = fields["starcoder_id"](unique=True, max_length=500)
         rclass_attr["starcoder_id"] = fields["starcoder_id"](unique=True, max_length=500)
+        class_attr["entity_type"] = models.ForeignKey(EntityType, null=True, on_delete=models.CASCADE)
         for field_name in entity_type_spec["data_fields"]:
             class_attr[field_name] = fields[field_name](**model_mapping[schema["data_fields"][field_name]["type"]][1])
             rclass_attr[field_name] = fields[field_name](**model_mapping[schema["data_fields"][field_name]["type"]][1])
@@ -117,22 +106,20 @@ for project_id, schema in SCHEMAS.items():
             if field_spec["source_entity_type"] == entity_type_name:
                 target_entity_name = make_name(project_id, field_spec["target_entity_type"])
                 rtarget_entity_name = make_name(project_id, "reconstructed^{}".format(field_spec["target_entity_type"]))
-                class_attr[field_name] = models.ManyToManyField("{}".format(target_entity_name), related_name="rev_{}".format(field_name))
-                rclass_attr[field_name] = models.ManyToManyField("{}".format(rtarget_entity_name), related_name="rev_{}".format(field_name))
-                #editable_fields.append(field_name)
+                class_attr[field_name] = models.ManyToManyField(
+                    target_entity_name,
+                    related_name="{}+".format(field_name)
+                )
+                rclass_attr[field_name] = models.ManyToManyField(
+                    rtarget_entity_name,
+                    related_name="{}+".format(field_name)
+                )
 
         globals()[class_name] = type(class_name, (models.Model,), class_attr)
         starcoder_models[class_name] = globals()[class_name]
-        #starcoder_models.append(globals()[class_name])
+        #starcoder_models[entity_type_name] = globals()[class_name]
         rclass_attr["_bottleneck"] = models.JSONField()
         globals()[rclass_name] = type(rclass_name, (models.Model,), rclass_attr)        
-        starcoder_reconstruction_models[rclass_name] = globals()[rclass_name]
-        #starcoder_reconstruction_models.append(globals()[rclass_name])
-        
-starcoder_forms = {}
-for class_name, model in starcoder_models.items():
-    class Meta:
-        model = model
-        exclude = []
-    starcoder_forms[class_name] = type("{}Form".format(class_name), (ModelForm,), {"Meta" : Meta})
+        starcoder_reconstruction_models[class_name] = globals()[rclass_name]
+
         

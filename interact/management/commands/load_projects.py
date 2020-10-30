@@ -5,9 +5,11 @@ import gzip
 from django.core.management.base import BaseCommand
 import json
 from interact import models
-from starcoder_server.settings import SCHEMAS, STARCODER_EXPERIMENTS_PATH, PROJECT_IDS
+from primary_server.settings import SCHEMAS, STARCODER_EXPERIMENTS_PATH
 import os.path
 from glob import glob
+
+PROJECT_IDS = list(SCHEMAS.keys())
 # categorical -> choices
 to_consider = ["categorical", "boolean", "numeric", "place", "date", "datetime"]
 

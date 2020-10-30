@@ -31,15 +31,15 @@ class Heatmap(BaseVisualization):
                 "type": "rect",
                 "align": "center",
                 "baseline" : "middle",
-                "from": {"data":"table"},
+                "from": {"data":self.dfields[0]},
                 "encode": {
                     "enter": {
                         "align": "center",
                         "baseline" : "middle",                        
-                        "x": {"scale": "xscale", "field": self.fields[1]},
+                        "x": {"scale": "xscale", "field": self.dfields[0]},
                         "width": {"scale" : "xscale", "band" : 1},
                         "height": {"scale" : "yscale", "band" : 1},
-                        "y": {"scale": "yscale", "field": self.fields[0]},
+                        "y": {"scale": "yscale", "field": self.ifield},
                         "fill" : {"value" : "red"},
                         #"path" : {"scale" : "icon", "field" : "plot_type"},
                         #"href" : {"field" : "url"},
@@ -80,7 +80,7 @@ class Heatmap(BaseVisualization):
             {
                 "name": "xscale",
                 "type": "band",
-                "domain": {"data": "table", "field": self.fields[0]},
+                "domain": {"data": self.dfields[0], "field": self.ifield},
                 "range": "width",
                 "padding": 0.05,
                 "round": True
@@ -88,7 +88,7 @@ class Heatmap(BaseVisualization):
             {
                 "name": "yscale",
                 "type" : "band",
-                "domain": {"data": "table", "field": self.fields[1]},
+                "domain": {"data": self.dfields[0], "field": self.dfields[0]},
                 "round": True,
                 "padding" : 0.05,
                 "range": "height"
