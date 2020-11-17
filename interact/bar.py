@@ -172,7 +172,8 @@ class Bar(StarcoderVisualization):
     @property
     def axes(self):
        return [
-           {"labelAngle" : 45, "orient": "bottom", "scale": "xscale", "title": self.ifield_name}, #self.fields[0]},
+           {"labelAngle" : 0, "orient": "bottom", "scale": "xscale", "title": self.ifield_name}, #self.fields[0]},
+           #{"labelAngle" : 45, "orient": "bottom", "scale": "xscale", "title": self.ifield_name}, #self.fields[0]},
            {"orient": "left", "scale": "yscale", "tickSize": 0, "labelPadding": 4, "zindex": 1},
         ]
     #        { "orient": "left", "scale": "yscale", "title" : ""}, #self.fields[1]}

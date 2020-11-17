@@ -183,7 +183,7 @@ class StarcoderVisualization(BaseVisualization):
         i_ents = getattr(
             models,
             models.make_name(
-                project.starcoder_id,
+                project.id,
                 self.ifield[0]
             )
         ).objects.all()

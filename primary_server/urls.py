@@ -13,14 +13,19 @@ Including another URLconf
     1. Import the include() function: from django.urls import include, path
     2. Add a URL to urlpatterns:  path('blog/', include('blog.urls'))
 """
+from django.conf.urls import url
 from django.contrib import admin
+from django.contrib.auth import views as auth_views
 from django.urls import path, include
 import interact
-#from turkle.turkle import urls as turkle_urls
-#print(turkle)
 
 urlpatterns = [
     path("", include("interact.urls")),
     #path("turkle", include("turkle.urls")),
+    url(r'^login/$',
+        auth_views.LoginView.as_view(
+            #extra_context={'TURKLE_EMAIL_ENABLED': TURKLE_EMAIL_ENABLED}
+        ),
+        name="login"),
     path('admin/', admin.site.urls),
 ]

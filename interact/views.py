@@ -4,8 +4,8 @@ from django.shortcuts import render
 from django.http import HttpResponse, JsonResponse
 from django.db.models import Field
 from interact import models
-from primary_server.settings import SCHEMAS
-from .visualization import figure_types, ProjectGrid, Topics, Bottlenecks, LIWC, SchemaGraph
+#from primary_server.settings import SCHEMAS
+from .visualization import figure_types, ProjectGrid, Topics, Bottlenecks, LIWC, SchemaGraph, Model
 from django.views.generic.list import ListView
 from django.views.generic.detail import DetailView
 import sys
@@ -22,6 +22,9 @@ dependent_field_types = {
     "scalar" : None,
 }
 
+def about_view(request):
+    return render(request, "interact/about.html")
+
 class ProjectListView(ListView):
     template_name = "interact/project_list.html"
     model = models.Project
@@ -29,8 +32,8 @@ class ProjectListView(ListView):
     def get_queryset(self):
         by_domain = {}
         for project in models.Project.objects.all():
-            schema = models.Schema.objects.get(project=project)
-            domain = schema.schema["meta"].get("domain", "Unknown")
+            schema = project.schema #models.schema.json #Schema.objects.get(project=project)
+            domain = schema["meta"].get("domain", "Unknown")
             by_domain[domain] = by_domain.get(domain, [])
             by_domain[domain].append(project)
         return [(i, a, b) for i, (a, b) in enumerate(sorted(by_domain.items()))]
@@ -41,19 +44,20 @@ class ProjectDetailView(DetailView):
     context_object_name = "object"
     def get_context_data(self, object):
         project = object
-        schema = models.Schema.objects.get(project=project).schema
-        schema = {v : {k : vv if v != "entity_types" else {kk : vvv for kk, vvv in vv.items() if kk != "meta"} for k, vv in schema[v].items() if k != "meta"} for v in ["meta", "entity_types", "data_fields", "relationship_fields"]}
+        schema = project.schema
+        schema = {v : {k : vv if v != "entity_types" else {kk : vvv for kk, vvv in vv.items() if kk != "meta"} for k, vv in schema[v].items() if k != "meta"} for v in ["entity_types", "data_fields", "relationship_fields"]}
         entity_types = models.EntityType.objects.filter(project=project) #schema["entity_types"].keys()
         topics = models.TopicModel.objects.filter(project=project)
         liwc = models.LIWC.objects.filter(project=project)
         tsne = models.TSNE.objects.filter(project=project)
+        model = models.StarcoderModel.objects.filter(project=project).values("structure")
+        structure = model[0]["structure"] if model.count() == 1 else None
         fields = []
         for etn, et in schema["entity_types"].items():
             for fn in et.get("data_fields", []):
                 ft = schema["data_fields"][fn]["type"]
                 if ft in independent_field_types and len([f for f in et["data_fields"] if f != fn and schema["data_fields"][f]["type"] in dependent_field_types]) > 0:
                     fields.append((etn, fn, ft, independent_field_types[ft]))
-        del schema["meta"]
         return {
             "project" : project,
             "schema_text" : json.dumps(schema, indent=4),
@@ -62,6 +66,7 @@ class ProjectDetailView(DetailView):
             "liwc" : liwc,
             "tsne" : tsne,
             "independent_fields" : fields,
+            "model" : structure,
         }
     
 class EntityListView(ListView):
@@ -71,8 +76,10 @@ class EntityListView(ListView):
     def get_queryset(self):
         etid = self.kwargs["entity_type_id"]
         et = models.EntityType.objects.get(id=etid)
-        etype = getattr(models, models.make_name(et.project.starcoder_id, et.name))
+        etype = getattr(models, models.make_name(et.project.id, et.name))
         self.extra_context = {"project" : et.project, "entity_type" : et}
+        for e in etype.objects.all():
+            print(e)
         return etype.objects.all()
 
 class EntityDetailView(DetailView):
@@ -83,7 +90,7 @@ class EntityDetailView(DetailView):
         entity_id = self.kwargs["pk"]
         entity_type_id = self.kwargs["entity_type_id"]
         entity_type = models.EntityType.objects.get(id=entity_type_id)
-        etype = getattr(models, models.make_name(entity_type.project.starcoder_id, entity_type.name))
+        etype = getattr(models, models.make_name(entity_type.project.id, entity_type.name))
         return etype.objects.get(id=entity_id)
     def get_context_data(self, object):
         entity_type = models.EntityType.objects.get(id=self.kwargs["entity_type_id"])
@@ -95,9 +102,9 @@ class EntityDetailView(DetailView):
         normal_fields = {}
         relationships = {}
         reverse_relationships = {}
-        etype = models.make_name(entity_type.project.starcoder_id, entity_type.name)
-        recon = models.starcoder_reconstruction_models[etype].objects.get(starcoder_id=object.starcoder_id)
-        print(recon)
+        etype = models.make_name(entity_type.project.id, entity_type.name)
+        recon = models.starcoder_reconstruction_models[etype].objects.filter(id=object.id)
+        recon = recon[0] if recon.count() == 1 else {}
         for f in object._meta.get_fields(include_hidden=True):
             name = f.name.rstrip("+")
             if name in ["id", "starcoder_id", "entity_type"]:
@@ -112,16 +119,16 @@ class EntityDetailView(DetailView):
                         )
                     )
             else:
-                normal_fields[f.name] = f.value_from_object(object)
-        print(reverse_relationships)
+                normal_fields[f.name] = (f.value_from_object(object), getattr(recon, name, None))
         return {
             "project_id" : entity_type.project.id,
             "entity_type" : entity_type,
             "object" : object,
             "entity" : entity,
-            "normal_fields" : normal_fields,
+            "normal_fields" : [(k, v, rv) for k, (v, rv) in normal_fields.items()],
             "relationships" : relationships,
             "reverse_relationships" : reverse_relationships,
+            "show_reconstructions" : False,
         }
 
 def figure(request, project_id, entity, field):
@@ -257,14 +264,14 @@ def liwc(request, project_id):
 
 def vega(request, project_id, entity, independent_field):
     proj = models.Project.objects.get(id=project_id)
-    schema = models.Schema.objects.get(project=proj).schema
+    schema = proj.schema
     retval = figure_types[schema["data_fields"][independent_field]["type"]](
         project_id,
         schema,
         (entity, independent_field)
     ).json
-    print(json.dumps(retval, indent=4))
-    print(len(str(retval))/ (1000.0 * 1000.0))
+    #print(json.dumps(retval, indent=4))
+    #print(len(str(retval))/ (1000.0 * 1000.0))
     return JsonResponse(retval)
 
 def vega_topics(request, project_id):
@@ -276,15 +283,15 @@ def vega_topics(request, project_id):
 
 def vega_liwc(request, project_id):
     proj = models.Project.objects.get(id=project_id)
-    schema = models.Schema.objects.get(project=proj).schema
+    schema = proj.schema #models.Schema.objects.get(project=proj).schema
     l = models.LIWC.objects.get(project=proj).spec
-    retval = LIWC(proj.starcoder_id, l, schema, ("", "")).json
-    print(json.dumps(retval, indent=4))
+    retval = LIWC(proj.name, l, schema, ("", "")).json
+    #print(json.dumps(retval, indent=4))
     return JsonResponse(retval)
 
 def vega_schema(request, project_id):
     proj = models.Project.objects.get(id=project_id)
-    schema = models.Schema.objects.get(project=proj).schema
+    schema = proj.schema
     retval = SchemaGraph(schema).json
     #print(json.dumps(retval, indent=4))
     return JsonResponse(retval)
@@ -293,5 +300,13 @@ def vega_bottlenecks(request, project_id):
     proj = models.Project.objects.get(id=project_id)
     tm = models.TSNE.objects.get(project=proj)
     retval = Bottlenecks(tm.spec).json
-    print(json.dumps(retval, indent=4))
+    #print(json.dumps(retval, indent=4))
+    return JsonResponse(retval)
+
+def vega_model(request, project_id):
+    project = models.Project.objects.get(id=project_id)
+    model = models.StarcoderModel.objects.filter(project=project).values("structure")
+    #print(model[0]["structure"])
+    retval = Model(model[0]["structure"] if model.count() == 1 else []).json
+    #print(retval)
     return JsonResponse(retval)

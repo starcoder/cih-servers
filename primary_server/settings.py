@@ -18,34 +18,6 @@ from pathlib import Path
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
-#
-# Change the value following this comment to the path of your working
-# copy of the starcoder-experiments repository.  The path can be
-# absolute, like this:
-#
-#   STARCODER_EXPERIMENTS_PATH = "/some/path/starcoder-experiments"
-#
-# or it can be relative to the cih-servers installation. But don't do
-# this:
-#
-#   STARCODER_EXPERIMENTS_PATH = "../starcoder-experiments"
-#
-# because that's sensitive to where you invoke commands from.  Instead,
-# do this, which has the same intended effect and is stable:
-#
-#STARCODER_EXPERIMENTS_PATH = os.path.join(BASE_DIR.parent, "starcoder-experiments")
-
-#SCHEMAS = {}
-#with open(os.path.join(STARCODER_EXPERIMENTS_PATH, "custom.py"), "rt") as c_ifd:    
-#    tree = ast.parse(c_ifd.read())
-#    for expr in tree.body:
-#        if len(getattr(expr, "targets", [])) == 1 and expr.targets[0].id == "EXPERIMENTS":
-#            for k, v in ast.literal_eval(expr.value).items():
-#                with open(os.path.join(STARCODER_EXPERIMENTS_PATH, v["SCHEMA"]), "rt") as s_ifd:
-#                    SCHEMAS[k] = json.loads(s_ifd.read())
-#            break
-#PROJECT_IDS = list(SCHEMAS.keys())
-
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/3.1/howto/deployment/checklist/
 
@@ -56,7 +28,6 @@ SECRET_KEY = '439ll50p8p(u3kfh11br!3xw=@=o*0u4%fl@%j(nv=16g60=i4'
 DEBUG = True
 
 ALLOWED_HOSTS = ["*"]
-
 
 # Application definition
 
@@ -69,11 +40,10 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     'django_extensions',
     'interact',
-    #'turkle',
+    'turkle',
     #'django_nose',
-    #'guardian',
+    'guardian',
     #'admin_auto_filters',
-
 ]
 
 MIDDLEWARE = [
@@ -120,6 +90,10 @@ DATABASES = {
     }
 }
 
+AUTHENTICATION_BACKENDS = (
+    'django.contrib.auth.backends.ModelBackend',  # default
+    'guardian.backends.ObjectPermissionBackend',
+)
 
 # Password validation
 # https://docs.djangoproject.com/en/3.1/ref/settings/#auth-password-validators
@@ -158,3 +132,4 @@ USE_TZ = True
 # https://docs.djangoproject.com/en/3.1/howto/static-files/
 
 STATIC_URL = '/static/'
+STATIC_ROOT = '/home/ec2-user/static'

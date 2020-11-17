@@ -158,7 +158,7 @@ class Geography(StarcoderVisualization):
                             "scale" : "color",
                             "field" : {"signal" : "dependent"},
                         },
-                        "size" : {"value" : 10},
+                        "size" : {"value" : 40},
                     }
                 },
                 #"transform" : [

@@ -4,9 +4,9 @@ import random
 class LIWC(BaseVisualization):
     @property
     def height(self):
-        return 2048
+        return 512
     
-    def __init__(self, project_id, spec, schema, ifield):
+    def __init__(self, project_name, spec, schema, ifield):
         self.values = []
         self.schema = schema
         random.shuffle(spec)
@@ -20,6 +20,7 @@ class LIWC(BaseVisualization):
         for field_name, field_spec in self.schema["data_fields"].items():
             if field_spec["type"] == "categorical":
                 self.categoricals.append(field_name)
+        self.categoricals = ["entity_type"]
         super(LIWC, self).__init__()
 
     @property
@@ -32,8 +33,8 @@ class LIWC(BaseVisualization):
                     "name" : " ",
                     "input": "select",
                     "element" : "#dependent",
-                    "options": self.categoricals,
-                    "labels": self.categoricals,
+                    "options": ["entity_type"], #self.categoricals,
+                    "labels": ["entity_type"], #self.categoricals,
                 },
             }
         ]
