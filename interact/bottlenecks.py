@@ -3,18 +3,19 @@ from .base_visualization import BaseVisualization
 class Bottlenecks(BaseVisualization):
     def __init__(self, spec):
         self.values = spec
-
+        self.num_ets = len(set([v["entity_type"] for v in self.values]))
+        
     @property
     def autosize(self):
         return "pad"
-    
+
     @property
     def signals(self):
         return [
             {"name" : "width", "value" : 400},
             {"name": "cellHeight", "value": 300},
             {"name": "cellWidth", "value": 400},
-            {"name" : "height", "value" : 1800},            
+            {"name" : "height", "value" : 400 * self.num_ets},
             {
                 "name": "active",
                 "value": {},

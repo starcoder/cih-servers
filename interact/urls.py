@@ -5,7 +5,7 @@ from django.conf.urls.static import static
 
 from . import views
 from .models import starcoder_models, starcoder_reconstruction_models
-from .views import starcoder_list_views, starcoder_detail_views, ProjectListView, ProjectDetailView, EntityListView, EntityDetailView, about_view
+from .views import starcoder_list_views, starcoder_detail_views, ProjectListView, ProjectDetailView, EntityListView, EntityDetailView, about_view, editor_view
 from turkle import views as turkle_views
 
 app_name = "interact"
@@ -13,6 +13,7 @@ urlpatterns = [
     path('', ProjectListView.as_view(), name='project_list'),
     url(r'turkle', include('turkle.urls')),
     path('about', about_view, name="about"),
+    path('editor', editor_view, name="editor"),
     path('project/<int:pk>/', ProjectDetailView.as_view(), name="project_detail"),
     path('schema/<int:project_id>/', views.schema, name="schema"),
     path('entities/<int:entity_type_id>', EntityListView.as_view(), name="entity_list"),    

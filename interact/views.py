@@ -25,6 +25,10 @@ dependent_field_types = {
 def about_view(request):
     return render(request, "interact/about.html")
 
+
+def editor_view(request):
+    return render(request, "interact/editor.html")
+
 class ProjectListView(ListView):
     template_name = "interact/project_list.html"
     model = models.Project
